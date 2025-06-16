@@ -1,0 +1,29 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+    - name: Deploy app via SSH
+      run: |
+        ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.SERVER_IP }} << 'EOF'
+          cd ~/holamundo-multilenguaje
+          git pull origin main
+          composer install --no-dev --optimize-autoloader
+        EOF
